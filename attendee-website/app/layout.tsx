@@ -1,26 +1,20 @@
-import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+// frontend/src/app/layout.tsx
+"use client";
+
+import { ThemeProvider } from "@mui/material/styles";
+import theme from "@/theme";
 import "./globals.css";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-poppins",
-});
-
-export const metadata: Metadata = {
-  title: "Dexa WFH Attendance Website",
-  description: "Webapp to submit or view employee WFH attendance",
-};
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} antialiased`}>{children}</body>
+      <body>
+        <ThemeProvider theme={theme}>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
