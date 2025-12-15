@@ -27,8 +27,8 @@ export default function ClockWithClockInCard() {
     type: "success" | "error";
     message: string;
   } | null>(null);
-
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -38,6 +38,12 @@ export default function ClockWithClockInCard() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Set mounted = true on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Update time every second
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
@@ -104,14 +110,20 @@ export default function ClockWithClockInCard() {
                 Current Time
               </Typography>
               <div className="pt-3">
-                <Clock size={160} hourHandLength={80} value={currentTime} />
+                {mounted ? (
+                  <Clock size={160} hourHandLength={80} value={currentTime} />
+                ) : (
+                  <Typography variant="h4">--:--:--</Typography>
+                )}
               </div>
-              <Typography
-                variant="h4"
-                className="font-semibold tracking-wide mt-2"
-              >
-                {formattedTime}
-              </Typography>
+              {mounted && (
+                <Typography
+                  variant="h4"
+                  className="font-semibold tracking-wide mt-2"
+                >
+                  {formattedTime}
+                </Typography>
+              )}
             </CardContent>
           </div>
 
