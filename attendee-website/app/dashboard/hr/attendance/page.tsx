@@ -24,7 +24,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider, StaticDatePicker } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 
-import { mockAttendance, AttendanceListItem } from "@/config/constants";
+import { mockAttendance, AttendanceListItem } from "@/config/MockConstants";
 
 export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = React.useState<Dayjs>(dayjs());

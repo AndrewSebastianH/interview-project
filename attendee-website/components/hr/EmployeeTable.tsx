@@ -20,7 +20,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-import { EmployeeListItem } from "@/config/constants";
+import { EmployeeListItem } from "@/config/MockConstants";
 import { fetchEmployeesBackend } from "@/services/Employees";
 import EmployeeFormModal from "@/components/hr/EmployeeFormModal";
 import DeleteEmployeeModal from "@/components/hr/DeleteEmployeeModal";
@@ -79,7 +79,7 @@ function EmployeeRow({ employee }: { employee: EmployeeListItem }) {
                       <TableRow key={idx}>
                         <TableCell>{att.date}</TableCell>
                         <TableCell>{att.clockIn}</TableCell>
-                        <TableCell>{att.clockOut}</TableCell>
+                        <TableCell>{att.clockOut || "-"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
