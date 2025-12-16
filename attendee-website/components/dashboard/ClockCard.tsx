@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React from "react";
 import {
   Card,
   CardContent,
@@ -23,28 +23,28 @@ import "react-clock/dist/Clock.css";
 dayjs.extend(duration);
 
 export default function ClockWithClockInCard() {
-  const [alert, setAlert] = useState<{
+  const [alert, setAlert] = React.useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [mounted, setMounted] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
-  const [isClockedIn, setIsClockedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [clockedInTime, setClockedInTime] = useState<Date | null>(null);
-  const [workedTime, setWorkedTime] = useState("00:00:00");
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+  const [mounted, setMounted] = React.useState(false);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [selectedPhoto, setSelectedPhoto] = React.useState<File | null>(null);
+  const [isClockedIn, setIsClockedIn] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [clockedInTime, setClockedInTime] = React.useState<Date | null>(null);
+  const [workedTime, setWorkedTime] = React.useState("00:00:00");
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Set mounted = true on client
-  useEffect(() => {
+  React.useEffect(() => {
     setMounted(true);
   }, []);
 
   // Update time every second
-  useEffect(() => {
+  React.useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
       setCurrentTime(now);
