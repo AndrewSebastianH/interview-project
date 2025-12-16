@@ -25,14 +25,20 @@ export default function InsightsSection() {
       <InsightCard
         title="Hours Worked This Week"
         value={hoursWorked}
-        color="#d6e0ff"
+        gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
       />
+
       <InsightCard
         title="Days Clocked In This Month"
         value={daysClockedIn}
-        color="#dfffd6"
+        gradient="linear-gradient(135deg, #11998e 0%, #0f766e 100%)"
       />
-      <InsightCard title="Late Arrivals" value={lateArrivals} color="#ffdede" />
+
+      <InsightCard
+        title="Late Arrivals"
+        value={lateArrivals}
+        gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+      />
     </div>
   );
 }
