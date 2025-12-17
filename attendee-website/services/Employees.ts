@@ -1,4 +1,4 @@
-import { mockEmployees } from "@/config/MockConstants";
+import { mockEmployees } from "@/constants/MockConstants";
 
 export function fetchEmployeesBackend(
   page: number,

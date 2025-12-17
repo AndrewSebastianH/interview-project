@@ -77,10 +77,8 @@ export class AttendanceService {
     return this.attendanceRepo.save(attendance);
   }
 
-  // Get paginated attendances (for HR)
-  async findAllTodayPaginated(query: AttendanceQueryDto) {
+  async findAllAttendances(query: AttendanceQueryDto) {
     const { page = 1, pageSize = 5, search, date } = query;
-
     const targetDate = date ? new Date(date) : new Date();
     const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);

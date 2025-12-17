@@ -35,6 +35,7 @@ export class EmployeeController {
   findAll(@Query() query: EmployeeQueryDto) {
     return this.employeeService.findAllPaginated(query);
   }
+
   @Patch(':id')
   @Roles('HR')
   update(@Param('id') id: number, @Body() dto: UpdateEmployeeDto) {

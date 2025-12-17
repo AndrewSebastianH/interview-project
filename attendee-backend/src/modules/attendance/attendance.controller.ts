@@ -17,8 +17,8 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 
-@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('attendance')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
@@ -46,7 +46,7 @@ export class AttendanceController {
 
   @Get()
   @Roles('HR')
-  findAllToday(@Query() query: AttendanceQueryDto) {
-    return this.attendanceService.findAllTodayPaginated(query);
+  findAll(@Query() query: AttendanceQueryDto) {
+    return this.attendanceService.findAllAttendances(query);
   }
 }
