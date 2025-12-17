@@ -13,10 +13,10 @@ import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
-    EmployeeModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -31,10 +31,12 @@ import { AuthModule } from './modules/auth/auth.module';
         synchronize: true,
       }),
     }),
+
+    EmployeeModule,
     AttendanceModule,
     AuthModule,
   ],
-  controllers: [AppController, AuthController],
-  providers: [AppService, EmployeeService, AttendanceService, AuthService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
