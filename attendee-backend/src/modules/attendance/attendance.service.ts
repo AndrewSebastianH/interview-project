@@ -1,12 +1,13 @@
 import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import { Employee } from '../employee/employee.entity';
+import { Employee, Role } from '../employee/employee.entity';
 import { Attendance } from './attendance.entity';
 
 @Injectable()
@@ -18,6 +19,10 @@ export class AttendanceService {
 
   // Clock in
   async clockIn(employee: Employee) {
+    if (employee.role === Role.HR) {
+      throw new ForbiddenException('HR cannot clock in');
+    }
+
     const openAttendance = await this.attendanceRepo.findOne({
       where: {
         employee: { id: employee.id },
@@ -53,6 +58,10 @@ export class AttendanceService {
 
   // Clock out
   async clockOut(employee: Employee) {
+    if (employee.role === Role.HR) {
+      throw new ForbiddenException('HR cannot clock out');
+    }
+
     const attendance = await this.attendanceRepo.findOne({
       where: {
         employee: { id: employee.id },
@@ -86,6 +95,9 @@ export class AttendanceService {
       .where('attendance.clockIn BETWEEN :start AND :end', {
         start: startOfDay,
         end: endOfDay,
+      })
+      .andWhere('employee.role = :role', {
+        role: Role.EMPLOYEE,
       })
       .orderBy('attendance.clockIn', 'DESC');
 

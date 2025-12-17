@@ -50,6 +50,9 @@ export class EmployeeService {
     const qb = this.employeeRepo
       .createQueryBuilder('employee')
       .leftJoinAndSelect('employee.attendances', 'attendance')
+      .andWhere('employee.role = :role', {
+        role: Role.EMPLOYEE,
+      })
       .orderBy('attendance.createdAt', 'DESC')
       .skip((page - 1) * pageSize)
       .take(pageSize);
