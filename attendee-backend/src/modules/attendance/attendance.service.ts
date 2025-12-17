@@ -15,24 +15,26 @@ export class AttendanceService {
   constructor(
     @InjectRepository(Attendance)
     private readonly attendanceRepo: Repository<Attendance>,
+    @InjectRepository(Employee)
+    private readonly employeeRepo: Repository<Employee>,
   ) {}
 
   // Clock in
-  async clockIn(employee: Employee) {
-    if (employee.role === Role.HR) {
-      throw new ForbiddenException('HR cannot clock in');
-    }
-
-    const openAttendance = await this.attendanceRepo.findOne({
-      where: {
-        employee: { id: employee.id },
-        clockOut: IsNull(),
-      },
+  async clockIn(user: { userId: number; role: string }) {
+    const employee = await this.employeeRepo.findOne({
+      where: { id: user.userId },
     });
 
-    if (openAttendance) {
-      throw new BadRequestException('Already clocked in');
-    }
+    if (!employee) throw new NotFoundException('Employee not found');
+
+    if (employee.role === Role.HR)
+      throw new ForbiddenException('HR cannot clock in');
+
+    const openAttendance = await this.attendanceRepo.findOne({
+      where: { employee: { id: employee.id }, clockOut: IsNull() },
+    });
+
+    if (openAttendance) throw new BadRequestException('Already clocked in');
 
     const attendance = this.attendanceRepo.create({
       employee,
@@ -42,50 +44,46 @@ export class AttendanceService {
     return this.attendanceRepo.save(attendance);
   }
 
-  // Upload proof
-  async attachProof(attendanceId: number, imagePath: string) {
-    const attendance = await this.attendanceRepo.findOne({
-      where: { id: attendanceId },
-    });
-
-    if (!attendance) {
-      throw new NotFoundException('Attendance not found');
-    }
-
-    attendance.pictureUrl = imagePath;
-    return this.attendanceRepo.save(attendance);
-  }
-
   // Clock out
-  async clockOut(employee: Employee) {
-    if (employee.role === Role.HR) {
-      throw new ForbiddenException('HR cannot clock out');
-    }
-
-    const attendance = await this.attendanceRepo.findOne({
-      where: {
-        employee: { id: employee.id },
-        clockOut: IsNull(),
-      },
+  async clockOut(user: { userId: number; role: string }) {
+    const employee = await this.employeeRepo.findOne({
+      where: { id: user.userId },
     });
 
-    if (!attendance) {
-      throw new NotFoundException('No active attendance found');
-    }
+    if (!employee) throw new NotFoundException('Employee not found');
+    if (employee.role === Role.HR)
+      throw new ForbiddenException('HR cannot clock out');
+
+    const attendance = await this.attendanceRepo.findOne({
+      where: { employee: { id: employee.id }, clockOut: IsNull() },
+    });
+
+    if (!attendance) throw new NotFoundException('No active attendance found');
 
     attendance.clockOut = new Date();
     return this.attendanceRepo.save(attendance);
   }
 
+  // Upload proof
+  async attachProof(attendanceId: number, imagePath: string) {
+    const attendance = await this.attendanceRepo.findOne({
+      where: { id: attendanceId },
+      relations: ['employee'],
+    });
+
+    if (!attendance) throw new NotFoundException('Attendance not found');
+
+    attendance.pictureUrl = imagePath;
+    return this.attendanceRepo.save(attendance);
+  }
+
+  // Get paginated attendances (for HR)
   async findAllTodayPaginated(query: AttendanceQueryDto) {
     const { page = 1, pageSize = 5, search, date } = query;
 
-    // Default = today
     const targetDate = date ? new Date(date) : new Date();
-
     const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
-
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
@@ -96,9 +94,7 @@ export class AttendanceService {
         start: startOfDay,
         end: endOfDay,
       })
-      .andWhere('employee.role = :role', {
-        role: Role.EMPLOYEE,
-      })
+      .andWhere('employee.role = :role', { role: Role.EMPLOYEE })
       .orderBy('attendance.clockIn', 'DESC');
 
     if (search) {

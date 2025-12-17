@@ -7,24 +7,28 @@ import {
   UseInterceptors,
   Get,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AttendanceService } from './attendance.service';
 import { multerConfig } from './multer.config';
 import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  // Phase 1
+  // clock in
   @Post('clock-in')
   clockIn(@Req() req) {
     return this.attendanceService.clockIn(req.user);
   }
 
-  // Phase 2
+  // upload pic
   @Post(':id/upload-proof')
   @UseInterceptors(FileInterceptor('file', multerConfig))
   uploadProof(
@@ -34,7 +38,7 @@ export class AttendanceController {
     return this.attendanceService.attachProof(id, file.path);
   }
 
-  // Phase 3
+  // clock out
   @Post('clock-out')
   clockOut(@Req() req) {
     return this.attendanceService.clockOut(req.user);
