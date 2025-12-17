@@ -26,3 +26,5 @@ export class Employee {
   @OneToMany(() => Attendance, (attendance) => attendance.employee)
   attendances: Attendance[];
 }
+
+export type SafeEmployee = Omit<Employee, 'password'>;

@@ -13,7 +13,7 @@ export class Attendance {
   id: number;
 
   @ManyToOne(() => Employee, (employee) => employee.attendances, {
-    eager: true,
+    onDelete: 'CASCADE',
   })
   employee: Employee;
 
