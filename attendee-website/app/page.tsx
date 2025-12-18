@@ -1,10 +1,27 @@
 "use client";
 
-import ResponsiveAppBar from "@/components/AppBar";
-import ClockCard from "@/components/dashboard/ClockCard";
-import CalendarCard from "@/components/dashboard/CalendarCard";
-import InsightsSection from "@/components/dashboard/InsightsSection";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import CustomSpinner from "@/components/ui/CustomSpinner";
 
 export default function Home() {
-  return <>this will be a router</>;
+  const router = useRouter();
+
+  useEffect(() => {
+    const roleStr = localStorage.getItem("role");
+    if (!roleStr) {
+      router.replace("/auth/login");
+      return;
+    }
+
+    const role = JSON.parse(roleStr);
+
+    if (role === "HR") {
+      router.replace("/dashboard/hr");
+    } else {
+      router.replace("/dashboard/employee");
+    }
+  }, [router]);
+
+  return <CustomSpinner fullScreen />;
 }

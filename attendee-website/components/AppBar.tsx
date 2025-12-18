@@ -1,98 +1,143 @@
 "use client";
+
 import * as React from "react";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
+import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { logout } from "@/api/auth";
+import MenuIcon from "@mui/icons-material/Menu";
 
-const settings = ["Profile", "Dashboard", "Logout"];
+type Role = "HR" | "Employee";
 
-function ResponsiveAppBar() {
+export default function ResponsiveAppBar({ role }: { role: Role }) {
+  const router = useRouter();
+
+  // User menu (avatar)
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
   );
 
-  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElUser(event.currentTarget);
-  };
-
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
+  // HR navigation menu (mobile)
+  const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
+    null
+  );
 
   return (
-    <AppBar position="static">
+    <AppBar position="sticky" elevation={5}>
       <Container maxWidth="xl" className="bg-white">
         <Toolbar disableGutters>
+          {/* Logo */}
           <Box
             sx={{
-              display: { xs: "none", md: "flex" },
+              display: "flex",
               alignItems: "center",
-              flexGrow: 1,
+              flexGrow: {
+                xs: 1,
+                md: role === "HR" ? 0 : 1,
+              },
             }}
           >
             <Image
               src="/logo_dexagroup.png"
               alt="Dexa Group Logo"
-              width={200}
-              height={80}
+              width={180}
+              height={70}
               priority
+              className="mr-15"
             />
           </Box>
 
-          <Box
-            sx={{
-              display: { xs: "flex", md: "none" },
-              alignItems: "center",
-              flexGrow: 0,
-              mr: "auto",
-            }}
-          >
-            <Image
-              src="/logo_dexagroup.png"
-              alt="Dexa Group Logo"
-              width={120}
-              height={50}
-              priority
-            />
-          </Box>
+          {/* HR Mobile Menu (☰) */}
+          {role === "HR" && (
+            <Box sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
+              <IconButton
+                size="large"
+                onClick={(e) => setAnchorElNav(e.currentTarget)}
+              >
+                <MenuIcon />
+              </IconButton>
 
+              <Menu
+                anchorEl={anchorElNav}
+                open={Boolean(anchorElNav)}
+                onClose={() => setAnchorElNav(null)}
+              >
+                <MenuItem
+                  onClick={() => {
+                    router.push("/dashboard/hr");
+                    setAnchorElNav(null);
+                  }}
+                >
+                  Manage Employees
+                </MenuItem>
+
+                <MenuItem
+                  onClick={() => {
+                    router.push("/dashboard/hr/attendance");
+                    setAnchorElNav(null);
+                  }}
+                >
+                  Attendance Review
+                </MenuItem>
+              </Menu>
+            </Box>
+          )}
+
+          {/* HR Desktop Navigation */}
+          {role === "HR" && (
+            <Box
+              sx={{
+                display: { xs: "none", md: "flex" },
+                gap: 2,
+                mr: 3,
+                flexGrow: 1,
+              }}
+            >
+              <Button onClick={() => router.push("/dashboard/hr")}>
+                Manage Employees
+              </Button>
+              <Button onClick={() => router.push("/dashboard/hr/attendance")}>
+                Attendance Review
+              </Button>
+            </Box>
+          )}
+
+          {/* Avatar / User Menu */}
           <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Open settings">
-              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
+            <Tooltip title="Account settings">
+              <IconButton
+                onClick={(e) => setAnchorElUser(e.currentTarget)}
+                sx={{ p: 0 }}
+              >
+                <Avatar />
               </IconButton>
             </Tooltip>
+
             <Menu
-              sx={{ mt: "45px" }}
-              id="menu-appbar"
               anchorEl={anchorElUser}
-              anchorOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
               open={Boolean(anchorElUser)}
-              onClose={handleCloseUserMenu}
+              onClose={() => setAnchorElUser(null)}
+              anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
-              {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Typography sx={{ textAlign: "center" }}>
-                    {setting}
-                  </Typography>
-                </MenuItem>
-              ))}
+              <MenuItem
+                onClick={() => {
+                  logout();
+                  setAnchorElUser(null);
+                  router.replace("/auth/login");
+                }}
+              >
+                Logout
+              </MenuItem>
             </Menu>
           </Box>
         </Toolbar>
@@ -100,5 +145,3 @@ function ResponsiveAppBar() {
     </AppBar>
   );
 }
-
-export default ResponsiveAppBar;

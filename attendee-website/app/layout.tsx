@@ -4,6 +4,7 @@
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "@/theme";
 import "./globals.css";
+import { AuthProvider } from "@/context/authContext";
 
 export default function RootLayout({
   children,
@@ -13,7 +14,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeProvider theme={theme}>{children}</ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider theme={theme}>{children}</ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

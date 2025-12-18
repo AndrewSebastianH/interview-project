@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React from "react";
 import {
   Card,
   CardContent,
@@ -19,46 +19,90 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import "react-clock/dist/Clock.css";
+import {
+  clockIn,
+  uploadProof,
+  clockOut,
+  getIsClockedIn,
+} from "@/api/attendance";
 
 dayjs.extend(duration);
 
 export default function ClockWithClockInCard() {
-  const [alert, setAlert] = useState<{
+  const [alert, setAlert] = React.useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [mounted, setMounted] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
-  const [isClockedIn, setIsClockedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [clockedInTime, setClockedInTime] = useState<Date | null>(null);
-  const [workedTime, setWorkedTime] = useState("00:00:00");
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+  const [mounted, setMounted] = React.useState(false);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [selectedPhoto, setSelectedPhoto] = React.useState<File | null>(null);
+  const [isClockedIn, setIsClockedIn] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [clockedInTime, setClockedInTime] = React.useState<Date | null>(null);
+  const [workedTime, setWorkedTime] = React.useState("00:00:00");
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Set mounted = true on client
-  useEffect(() => {
+  React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Update time every second
-  useEffect(() => {
+  React.useEffect(() => {
+    const initClockState = async () => {
+      try {
+        const res = await getIsClockedIn();
+
+        if (res.isClockedIn) {
+          setIsClockedIn(true);
+
+          const clockInDate = new Date(res.clockInTime);
+          setClockedInTime(clockInDate);
+
+          const dur = dayjs.duration(res.workedSeconds, "seconds");
+          setWorkedTime(
+            `${dur.hours().toString().padStart(2, "0")}:${dur
+              .minutes()
+              .toString()
+              .padStart(2, "0")}:${dur.seconds().toString().padStart(2, "0")}`
+          );
+        }
+      } catch (err) {
+        console.error("Failed to fetch clock-in state", err);
+      }
+    };
+
+    initClockState();
+  }, []);
+
+  React.useEffect(() => {
+    if (!isClockedIn || !clockedInTime) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+
+      const elapsedMs = now.getTime() - clockedInTime.getTime();
+
+      const totalSeconds = Math.floor(elapsedMs / 1000);
+
+      const dur = dayjs.duration(totalSeconds, "seconds");
+
+      setWorkedTime(
+        `${dur.hours().toString().padStart(2, "0")}:${dur
+          .minutes()
+          .toString()
+          .padStart(2, "0")}:${dur.seconds().toString().padStart(2, "0")}`
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isClockedIn, clockedInTime]);
+
+  React.useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
       setCurrentTime(now);
-
-      if (isClockedIn && clockedInTime) {
-        const diff = now.getTime() - clockedInTime.getTime();
-        const dur = dayjs.duration(diff);
-        setWorkedTime(
-          `${dur.hours().toString().padStart(2, "0")}:${dur
-            .minutes()
-            .toString()
-            .padStart(2, "0")}:${dur.seconds().toString().padStart(2, "0")}`
-        );
-      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -74,30 +118,47 @@ export default function ClockWithClockInCard() {
     if (!selectedPhoto) return;
 
     setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
 
+    try {
+      const clockInRes = await clockIn();
+
+      const id = clockInRes.id;
+
+      console.log("Clock-in ID:", id);
       setIsClockedIn(true);
       setClockedInTime(new Date());
       setWorkedTime("00:00:00");
-      setSelectedPhoto(null);
       setIsModalOpen(false);
 
       setAlert({ type: "success", message: "Clock-in successful!" });
+
+      uploadProof(id, selectedPhoto).catch(() => {
+        console.error("Proof upload failed");
+        setAlert({ type: "error", message: "Proof upload failed." });
+      });
+
+      setSelectedPhoto(null);
     } catch (err) {
-      console.error("Clock-in failed", err);
+      console.error(err);
       setAlert({ type: "error", message: "Clock-in failed." });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClockOut = () => {
-    setIsClockedIn(false);
-    setClockedInTime(null);
-    setWorkedTime("00:00:00");
+  const handleClockOut = async () => {
+    try {
+      await clockOut();
 
-    setAlert({ type: "success", message: "Clock-out successful!" });
+      setIsClockedIn(false);
+      setClockedInTime(null);
+      setWorkedTime("00:00:00");
+
+      setAlert({ type: "success", message: "Clock-out successful!" });
+    } catch (err) {
+      console.error(err);
+      setAlert({ type: "error", message: "Clock-out failed." });
+    }
   };
 
   return (
@@ -153,7 +214,7 @@ export default function ClockWithClockInCard() {
               disabled={isClockedIn}
             >
               {isClockedIn
-                ? `Clocked in at ${clockedInTime?.toLocaleTimeString()}`
+                ? `Clocked in at ${dayjs(clockedInTime).format("HH:mm:ss")}`
                 : "Clock In"}
             </Button>
           </div>
