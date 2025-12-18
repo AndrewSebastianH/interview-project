@@ -21,6 +21,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import dayjs from "dayjs";
 
 import EmployeeFormModal from "@/components/hr/EmployeeFormModal";
 import DeleteEmployeeModal from "@/components/hr/DeleteEmployeeModal";
@@ -91,13 +92,30 @@ function EmployeeRow({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {employee.attendance.map((att, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>{att.date}</TableCell>
-                        <TableCell>{att.clockIn}</TableCell>
-                        <TableCell>{att.clockOut || "-"}</TableCell>
-                      </TableRow>
-                    ))}
+                    {employee.attendance.map((att, idx) => {
+                      const clockIn = dayjs(att.clockIn);
+                      const clockOut = att.clockOut
+                        ? dayjs(att.clockOut)
+                        : null;
+
+                      return (
+                        <TableRow key={idx}>
+                          <TableCell>
+                            {clockIn.isValid()
+                              ? clockIn.format("DD MMM YYYY")
+                              : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {clockIn.isValid() ? clockIn.format("HH:mm") : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {clockOut && clockOut.isValid()
+                              ? clockOut.format("HH:mm")
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -184,6 +202,10 @@ export default function EmployeeTable({
       setLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   React.useEffect(() => {
     fetchData();
