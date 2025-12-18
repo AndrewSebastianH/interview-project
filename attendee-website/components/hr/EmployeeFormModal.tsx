@@ -100,6 +100,25 @@ export default function EmployeeFormModal({
     return Object.values(newErrors).every((e) => e === "");
   };
 
+  const isFormValid = React.useMemo(() => {
+    if (!name.trim() || !email.trim()) return false;
+    if (!/\S+@\S+\.\S+/.test(email)) return false;
+    if (isCreate && !password) return false;
+    if (password && password.length < 6) return false;
+    if (password && password !== confirmPassword) return false;
+
+    // edit mode: must have at least one change
+    if (!isCreate && employee) {
+      const isChanged =
+        name !== employee.name ||
+        email !== employee.email ||
+        (password && password.length > 0);
+      return isChanged;
+    }
+
+    return true;
+  }, [name, email, password, confirmPassword, isCreate, employee]);
+
   const handleCreate = () => {
     if (!validate()) return;
     onSave({ name, email, password });
@@ -199,7 +218,11 @@ export default function EmployeeFormModal({
 
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSave}>
+        <Button
+          variant="contained"
+          onClick={handleSave}
+          disabled={!isFormValid}
+        >
           {isCreate ? "Create Employee" : "Save Changes"}
         </Button>
       </DialogActions>

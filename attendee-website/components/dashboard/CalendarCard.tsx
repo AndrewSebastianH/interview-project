@@ -4,11 +4,17 @@ import React from "react";
 import { Card, CardContent, Typography } from "@mui/material";
 import { LocalizationProvider, StaticDatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import dayjs, { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
 
-export default function CalendarCard() {
-  const [selectedDate, setSelectedDate] = React.useState<Dayjs | null>(dayjs());
+interface CalendarCardProps {
+  selectedDate: Dayjs;
+  onChange: (date: Dayjs) => void;
+}
 
+export default function CalendarCard({
+  selectedDate,
+  onChange,
+}: CalendarCardProps) {
   return (
     <Card className="max-w-full">
       <CardContent className="flex flex-col items-center justify-center">
@@ -20,7 +26,7 @@ export default function CalendarCard() {
           <StaticDatePicker
             displayStaticWrapperAs="desktop"
             value={selectedDate}
-            onChange={(newValue) => setSelectedDate(newValue)}
+            onChange={(newValue) => newValue && onChange(newValue)}
             slots={{ actionBar: () => null }}
           />
         </LocalizationProvider>

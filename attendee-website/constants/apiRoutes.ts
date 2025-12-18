@@ -1,4 +1,4 @@
-export const ROUTES = {
+export const API_ROUTES = {
   LOGIN: "/auth/login",
 
   GET_EMPLOYEES: (params?: {
@@ -23,6 +23,19 @@ export const ROUTES = {
   ATTENDANCE_UPLOAD_PROOF: (id: number | string) =>
     `/attendance/${id}/upload-proof`,
   ATTENDANCE_CLOCKOUT: "/attendance/clock-out",
+  ATTENDANCE_IS_CLOCKED_IN: "/attendance/is-clocked-in",
+
+  ATTENDANCE_INSIGHTS: (params?: { month?: string }) => {
+    const query = params
+      ? "?" +
+        Object.entries(params)
+          .filter(([_, value]) => value !== undefined && value !== null)
+          .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+          .join("&")
+      : "";
+
+    return `/attendance/insights${query}`;
+  },
 
   GET_ATTENDANCES_TODAY: (params?: {
     page?: number;

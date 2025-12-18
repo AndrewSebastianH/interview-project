@@ -6,7 +6,6 @@ import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
@@ -14,12 +13,21 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { logout } from "@/api/auth";
+import MenuIcon from "@mui/icons-material/Menu";
 
-type Role = "HR" | "EMPLOYEE";
+type Role = "HR" | "Employee";
 
 export default function ResponsiveAppBar({ role }: { role: Role }) {
   const router = useRouter();
+
+  // User menu (avatar)
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
+    null
+  );
+
+  // HR navigation menu (mobile)
+  const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
     null
   );
 
@@ -28,7 +36,16 @@ export default function ResponsiveAppBar({ role }: { role: Role }) {
       <Container maxWidth="xl" className="bg-white">
         <Toolbar disableGutters>
           {/* Logo */}
-          <Box sx={{ display: "flex", alignItems: "center", flexGrow: 0 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexGrow: {
+                xs: 1,
+                md: role === "HR" ? 0 : 1,
+              },
+            }}
+          >
             <Image
               src="/logo_dexagroup.png"
               alt="Dexa Group Logo"
@@ -39,9 +56,52 @@ export default function ResponsiveAppBar({ role }: { role: Role }) {
             />
           </Box>
 
-          {/* HR Navigation */}
+          {/* HR Mobile Menu (☰) */}
           {role === "HR" && (
-            <Box sx={{ display: "flex", gap: 2, mr: 3, flexGrow: 1 }}>
+            <Box sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
+              <IconButton
+                size="large"
+                onClick={(e) => setAnchorElNav(e.currentTarget)}
+              >
+                <MenuIcon />
+              </IconButton>
+
+              <Menu
+                anchorEl={anchorElNav}
+                open={Boolean(anchorElNav)}
+                onClose={() => setAnchorElNav(null)}
+              >
+                <MenuItem
+                  onClick={() => {
+                    router.push("/dashboard/hr");
+                    setAnchorElNav(null);
+                  }}
+                >
+                  Manage Employees
+                </MenuItem>
+
+                <MenuItem
+                  onClick={() => {
+                    router.push("/dashboard/hr/attendance");
+                    setAnchorElNav(null);
+                  }}
+                >
+                  Attendance Review
+                </MenuItem>
+              </Menu>
+            </Box>
+          )}
+
+          {/* HR Desktop Navigation */}
+          {role === "HR" && (
+            <Box
+              sx={{
+                display: { xs: "none", md: "flex" },
+                gap: 2,
+                mr: 3,
+                flexGrow: 1,
+              }}
+            >
               <Button onClick={() => router.push("/dashboard/hr")}>
                 Manage Employees
               </Button>
@@ -51,7 +111,7 @@ export default function ResponsiveAppBar({ role }: { role: Role }) {
             </Box>
           )}
 
-          {/* Avatar / Settings */}
+          {/* Avatar / User Menu */}
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Account settings">
               <IconButton
@@ -61,6 +121,7 @@ export default function ResponsiveAppBar({ role }: { role: Role }) {
                 <Avatar />
               </IconButton>
             </Tooltip>
+
             <Menu
               anchorEl={anchorElUser}
               open={Boolean(anchorElUser)}
@@ -68,7 +129,13 @@ export default function ResponsiveAppBar({ role }: { role: Role }) {
               anchorOrigin={{ vertical: "top", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
-              <MenuItem onClick={() => router.push("/auth/login")}>
+              <MenuItem
+                onClick={() => {
+                  logout();
+                  setAnchorElUser(null);
+                  router.replace("/auth/login");
+                }}
+              >
                 Logout
               </MenuItem>
             </Menu>

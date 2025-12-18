@@ -28,6 +28,17 @@ export class AttendanceController {
     return this.attendanceService.clockIn(req.user);
   }
 
+  // is clocked in
+  @Get('is-clocked-in')
+  isClockedIn(@Req() req) {
+    return this.attendanceService.isClockedIn(req.user);
+  }
+
+  @Get('insights')
+  getInsights(@Req() req, @Query('month') month?: string) {
+    return this.attendanceService.getMonthlyInsights(req.user, month);
+  }
+
   // upload pic
   @Post(':id/upload-proof')
   @UseInterceptors(FileInterceptor('file', multerConfig))

@@ -7,6 +7,7 @@ import React from "react";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import Visibility from "@mui/icons-material/Visibility";
 import { useRouter } from "next/navigation";
+import { login } from "@/api/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,8 +56,16 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
+      const res = await login({ email, password });
+
+      localStorage.setItem("auth_token", res.accessToken);
+
+      localStorage.setItem("role", JSON.stringify(res.role));
+
       router.push("/");
-    } catch (err) {
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || "Login failed");
     } finally {
       setIsLoading(false);
     }

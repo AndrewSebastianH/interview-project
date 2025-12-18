@@ -7,16 +7,33 @@ import {
   Button,
   TextField,
   InputAdornment,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import EmployeeTable from "@/components/hr/EmployeeTable";
 import EmployeeFormModal from "@/components/hr/EmployeeFormModal";
 import React from "react";
+import { createEmployee } from "@/api/employees";
 
 export default function HRDashboard() {
-  const [open, setOpen] = React.useState(false);
   const [openCreate, setOpenCreate] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const [refreshKey, setRefreshKey] = React.useState(0);
+
+  // Snackbar state
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+  const [snackbarMessage, setSnackbarMessage] = React.useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = React.useState<
+    "success" | "error"
+  >("success");
+
+  const showMessage = (message: string, severity: "success" | "error") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
 
   return (
     <main className="p-6 w-full mx-auto flex flex-col gap-6">
@@ -30,6 +47,8 @@ export default function HRDashboard() {
                 placeholder="Search employee..."
                 size="small"
                 className="w-full md:w-1/3"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 slotProps={{
                   input: {
                     endAdornment: (
@@ -50,7 +69,7 @@ export default function HRDashboard() {
               </Button>
             </div>
             <div className="py-10">
-              <EmployeeTable />
+              <EmployeeTable search={search} refreshKey={refreshKey} />
             </div>
           </CardContent>
         </Card>
@@ -60,12 +79,44 @@ export default function HRDashboard() {
           mode="create"
           open={openCreate}
           onClose={() => setOpenCreate(false)}
-          onSave={(payload) => {
-            console.log("CREATE EMPLOYEE:", payload);
-            setOpenCreate(false);
+          onSave={async (payload) => {
+            if (!payload.password) {
+              alert("Password is required");
+              return;
+            }
+
+            try {
+              await createEmployee({
+                name: payload.name,
+                email: payload.email,
+                password: payload.password,
+              });
+              setOpenCreate(false);
+              setSearch((prev) => prev);
+              setRefreshKey((k) => k + 1);
+              showMessage("Employee created successfully", "success");
+            } catch (err) {
+              console.error("Failed to create employee", err);
+              showMessage("Failed to create employee", "error");
+            }
           }}
         />
       </section>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </main>
   );
 }

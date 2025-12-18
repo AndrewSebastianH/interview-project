@@ -17,8 +17,9 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
     }
 
     const role = JSON.parse(roleStr);
-    if (role !== "HR") {
-      router.replace("/dashboard/employee");
+    if (role !== "Employee") {
+      router.replace("/dashboard/hr");
+      return;
     }
 
     setLoading(false);
@@ -28,7 +29,7 @@ export default function HRLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <ResponsiveAppBar role="HR" />
+      <ResponsiveAppBar role="Employee" />
       {children}
     </>
   );

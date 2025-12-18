@@ -18,13 +18,16 @@ import {
   DialogContent,
   DialogTitle,
   Avatar,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import SentimentNeutralIcon from "@mui/icons-material/SentimentNeutral";
+import SearchIcon from "@mui/icons-material/Search";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider, StaticDatePicker } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
-
-import { mockAttendance, AttendanceListItem } from "@/constants/MockConstants";
+import { AttendanceListItem } from "@/api/types/attendance";
+import { getAttendancesPerDate } from "@/api/attendance";
 
 export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = React.useState<Dayjs>(dayjs());
@@ -34,13 +37,55 @@ export default function AttendancePage() {
   const [openProof, setOpenProof] = React.useState<AttendanceListItem | null>(
     null
   );
+  const [search, setSearch] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [page, setPage] = React.useState(1);
 
-  // Filter mock attendance by selected date
   React.useEffect(() => {
-    const dateStr = selectedDate.format("YYYY-MM-DD");
-    const filtered = mockAttendance.filter((att) => att.date === dateStr);
-    setAttendanceList(filtered);
-  }, [selectedDate]);
+    setPage(1);
+  }, [search, selectedDate]);
+
+  React.useEffect(() => {
+    const fetchAttendance = async () => {
+      setLoading(true);
+      try {
+        const res = await getAttendancesPerDate({
+          page,
+          pageSize: 10,
+          search,
+          date: selectedDate.format("YYYY-MM-DD"),
+        });
+
+        const mapped: AttendanceListItem[] = res.data.map(
+          (item: {
+            id: any;
+            employee: { name: any };
+            clockIn: string | number | dayjs.Dayjs | Date | null | undefined;
+            clockOut: string | number | dayjs.Dayjs | Date | null | undefined;
+            pictureUrl: any;
+          }) => ({
+            id: item.id,
+            name: item.employee.name,
+            clockIn: dayjs(item.clockIn).format("HH:mm"),
+            clockOut: item.clockOut
+              ? dayjs(item.clockOut).format("HH:mm")
+              : null,
+            status: item.clockOut ? "Present" : "Incomplete",
+            pictureUrl: item.pictureUrl,
+          })
+        );
+
+        setAttendanceList(mapped);
+      } catch (err) {
+        console.error("Failed to fetch attendance", err);
+        setAttendanceList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendance();
+  }, [selectedDate, search, page]);
 
   return (
     <main className="p-6 w-full mx-auto flex flex-col gap-6">
@@ -49,7 +94,6 @@ export default function AttendancePage() {
       </Typography>
 
       <Box className="flex w-full gap-6 flex-wrap md:flex-nowrap">
-        {/* Left: Calendar */}
         <Card>
           <CardContent>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -64,18 +108,37 @@ export default function AttendancePage() {
           </CardContent>
         </Card>
 
-        {/* Right: Attendance Table */}
-        {attendanceList.length === 0 ? (
-          <Card sx={{ flex: 1 }}>
-            <CardContent className="flex flex-col h-full items-center justify-center space-y-5">
+        <TableContainer className="p-5 flex-1" component={Paper}>
+          <TextField
+            placeholder="Search employee..."
+            size="small"
+            className="w-full mb-4"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {loading ? (
+            <Box className="flex justify-center py-10">
+              <Typography>Loading attendance...</Typography>
+            </Box>
+          ) : attendanceList.length === 0 ? (
+            <Box className="flex flex-col items-center justify-center py-10 gap-4">
               <SentimentNeutralIcon sx={{ fontSize: 80 }} />
               <Typography color="text.secondary">
-                No attendance records for this date.
+                No attendance records found.
               </Typography>
-            </CardContent>
-          </Card>
-        ) : (
-          <TableContainer className="p-5 flex-1" component={Paper}>
+            </Box>
+          ) : (
+            /* Table */
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -90,7 +153,7 @@ export default function AttendancePage() {
                   <Tooltip
                     key={att.id}
                     title={
-                      att.pictureProof
+                      att.pictureUrl
                         ? "Click to view proof"
                         : "No proof available"
                     }
@@ -98,8 +161,8 @@ export default function AttendancePage() {
                   >
                     <TableRow
                       hover
-                      sx={{ cursor: att.pictureProof ? "pointer" : "default" }}
-                      onClick={() => att.pictureProof && setOpenProof(att)}
+                      sx={{ cursor: att.pictureUrl ? "pointer" : "default" }}
+                      onClick={() => att.pictureUrl && setOpenProof(att)}
                     >
                       <TableCell>{att.name}</TableCell>
                       <TableCell>{att.clockIn}</TableCell>
@@ -110,8 +173,8 @@ export default function AttendancePage() {
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
-        )}
+          )}
+        </TableContainer>
       </Box>
 
       {/* Dialog for Attendance Proof */}
@@ -123,10 +186,10 @@ export default function AttendancePage() {
       >
         <DialogTitle>Attendance Proof</DialogTitle>
         <DialogContent className="flex justify-center">
-          {openProof?.pictureProof ? (
+          {openProof?.pictureUrl ? (
             <img
-              src={openProof.pictureProof}
-              alt={`Proof of ${openProof.name}`}
+              src={`${process.env.NEXT_PUBLIC_API_URL}${openProof.pictureUrl}`}
+              alt={`Attendance Proof of ${openProof.name}`}
               className="max-w-full max-h-100 object-contain"
             />
           ) : (

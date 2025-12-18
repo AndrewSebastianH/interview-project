@@ -6,9 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, Between, Not } from 'typeorm';
 import { Employee, Role } from '../employee/employee.entity';
 import { Attendance } from './attendance.entity';
+import getMonthRange from 'src/helpers/getMonthrange';
 
 @Injectable()
 export class AttendanceService {
@@ -44,6 +45,45 @@ export class AttendanceService {
     return this.attendanceRepo.save(attendance);
   }
 
+  // Is Clocked In
+  async isClockedIn(user: { userId: number; role: string }) {
+    const employee = await this.employeeRepo.findOne({
+      where: { id: user.userId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    if (employee.role === Role.HR) {
+      throw new ForbiddenException('HR cannot have attendance records');
+    }
+
+    const openAttendance = await this.attendanceRepo.findOne({
+      where: {
+        employee: { id: employee.id },
+        clockOut: IsNull(),
+      },
+    });
+
+    if (!openAttendance) {
+      return {
+        isClockedIn: false,
+      };
+    }
+
+    const now = new Date().getTime();
+    const clockInTime = new Date(openAttendance.clockIn).getTime();
+    const workedSeconds = Math.floor((now - clockInTime) / 1000);
+
+    return {
+      isClockedIn: true,
+      attendanceId: openAttendance.id,
+      clockInTime: openAttendance.clockIn,
+      workedSeconds,
+    };
+  }
+
   // Clock out
   async clockOut(user: { userId: number; role: string }) {
     const employee = await this.employeeRepo.findOne({
@@ -71,9 +111,16 @@ export class AttendanceService {
       relations: ['employee'],
     });
 
-    if (!attendance) throw new NotFoundException('Attendance not found');
+    if (!attendance) {
+      throw new NotFoundException('Attendance not found');
+    }
 
-    attendance.pictureUrl = imagePath;
+    const normalizedPath = imagePath
+      .replace(/\\/g, '/')
+      .replace(/^uploads\//, '');
+
+    attendance.pictureUrl = `/uploads/${normalizedPath}`;
+
     return this.attendanceRepo.save(attendance);
   }
 
@@ -113,6 +160,7 @@ export class AttendanceService {
         date: a.clockIn.toISOString().split('T')[0],
         clockIn: a.clockIn,
         clockOut: a.clockOut,
+        pictureUrl: a.pictureUrl,
         employee: {
           id: a.employee.id,
           name: a.employee.name,
@@ -125,6 +173,61 @@ export class AttendanceService {
         total,
         totalPages: Math.ceil(total / pageSize),
       },
+    };
+  }
+
+  async getMonthlyInsights(
+    user: { userId: number; role: string },
+    month?: string,
+  ) {
+    if (user.role === Role.HR) {
+      throw new ForbiddenException('HR has no attendance insights');
+    }
+
+    const employee = await this.employeeRepo.findOne({
+      where: { id: user.userId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const { start, end } = getMonthRange(month);
+
+    const attendances = await this.attendanceRepo.find({
+      where: {
+        employee: { id: employee.id },
+        clockIn: Between(start, end),
+        clockOut: Not(IsNull()),
+      },
+    });
+
+    let totalWorkedSeconds = 0;
+    let lateArrivals = 0;
+
+    for (const att of attendances) {
+      const diffMs =
+        new Date(att.clockOut).getTime() - new Date(att.clockIn).getTime();
+
+      totalWorkedSeconds += Math.floor(diffMs / 1000);
+
+      const clockInDate = new Date(att.clockIn);
+      const workStart = new Date(att.clockIn);
+
+      workStart.setHours(9, 0, 0, 0);
+
+      if (clockInDate > workStart) {
+        lateArrivals++;
+      }
+    }
+
+    return {
+      month:
+        month ??
+        `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`,
+      totalWorkedSeconds,
+      daysClockedIn: attendances.length,
+      lateArrivals,
     };
   }
 }

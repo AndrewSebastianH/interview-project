@@ -1,26 +1,27 @@
-// app/dashboard/layout.tsx
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import ResponsiveAppBar from "@/components/AppBar";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import CustomSpinner from "@/components/ui/CustomSpinner";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = cookies();
-  //   const token = cookieStore.get("token")?.value;
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  //   if (!token) {
-  //     redirect("/auth/login");
-  //   }
+  useEffect(() => {
+    const roleStr = localStorage.getItem("role");
+    if (!roleStr) {
+      router.replace("/auth/login");
+      return;
+    }
+    setLoading(false);
+  }, [router]);
 
-  const role = "HR";
+  if (loading) return <CustomSpinner fullScreen />;
 
-  return (
-    <>
-      <ResponsiveAppBar role={role} />
-      <main className="p-6">{children}</main>
-    </>
-  );
+  return <>{children}</>;
 }
