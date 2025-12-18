@@ -17,9 +17,9 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  Avatar,
   TextField,
   InputAdornment,
+  Pagination,
 } from "@mui/material";
 import SentimentNeutralIcon from "@mui/icons-material/SentimentNeutral";
 import SearchIcon from "@mui/icons-material/Search";
@@ -39,7 +39,10 @@ export default function AttendancePage() {
   );
   const [search, setSearch] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+
   const [page, setPage] = React.useState(1);
+  const pageSize = 10;
+  const [total, setTotal] = React.useState(0);
 
   React.useEffect(() => {
     setPage(1);
@@ -51,34 +54,26 @@ export default function AttendancePage() {
       try {
         const res = await getAttendancesPerDate({
           page,
-          pageSize: 10,
+          pageSize,
           search,
           date: selectedDate.format("YYYY-MM-DD"),
         });
 
-        const mapped: AttendanceListItem[] = res.data.map(
-          (item: {
-            id: any;
-            employee: { name: any };
-            clockIn: string | number | dayjs.Dayjs | Date | null | undefined;
-            clockOut: string | number | dayjs.Dayjs | Date | null | undefined;
-            pictureUrl: any;
-          }) => ({
-            id: item.id,
-            name: item.employee.name,
-            clockIn: dayjs(item.clockIn).format("HH:mm"),
-            clockOut: item.clockOut
-              ? dayjs(item.clockOut).format("HH:mm")
-              : null,
-            status: item.clockOut ? "Present" : "Incomplete",
-            pictureUrl: item.pictureUrl,
-          })
-        );
+        const mapped: AttendanceListItem[] = res.data.map((item: any) => ({
+          id: item.id,
+          name: item.employee.name,
+          clockIn: dayjs(item.clockIn).format("HH:mm"),
+          clockOut: item.clockOut ? dayjs(item.clockOut).format("HH:mm") : null,
+          status: item.clockOut ? "Present" : "Incomplete",
+          pictureUrl: item.pictureUrl,
+        }));
 
         setAttendanceList(mapped);
+        setTotal(res.meta.total);
       } catch (err) {
         console.error("Failed to fetch attendance", err);
         setAttendanceList([]);
+        setTotal(0);
       } finally {
         setLoading(false);
       }
@@ -86,6 +81,8 @@ export default function AttendancePage() {
 
     fetchAttendance();
   }, [selectedDate, search, page]);
+
+  const pageCount = Math.ceil(total / pageSize);
 
   return (
     <main className="p-6 w-full mx-auto flex flex-col gap-6">
@@ -138,7 +135,6 @@ export default function AttendancePage() {
               </Typography>
             </Box>
           ) : (
-            /* Table */
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -174,10 +170,21 @@ export default function AttendancePage() {
               </TableBody>
             </Table>
           )}
+
+          {pageCount > 1 && (
+            <Box display="flex" justifyContent="center" mt={2}>
+              <Pagination
+                count={pageCount}
+                page={page}
+                onChange={(_, value) => setPage(value)}
+                color="primary"
+                disabled={loading}
+              />
+            </Box>
+          )}
         </TableContainer>
       </Box>
 
-      {/* Dialog for Attendance Proof */}
       <Dialog
         open={!!openProof}
         onClose={() => setOpenProof(null)}

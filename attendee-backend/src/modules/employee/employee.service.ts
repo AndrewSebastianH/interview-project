@@ -47,24 +47,49 @@ export class EmployeeService {
   async findAllPaginated(query: EmployeeQueryDto) {
     const { page = 1, pageSize = 5, search } = query;
 
-    const qb = this.employeeRepo
+    const baseQb = this.employeeRepo
       .createQueryBuilder('employee')
-      .leftJoinAndSelect('employee.attendances', 'attendance')
-      .andWhere('employee.role = :role', {
-        role: Role.EMPLOYEE,
-      })
-      .orderBy('attendance.createdAt', 'DESC')
-      .skip((page - 1) * pageSize)
-      .take(pageSize);
+      .where('employee.role = :role', { role: Role.EMPLOYEE });
 
     if (search) {
-      qb.andWhere(
+      baseQb.andWhere(
         '(employee.name LIKE :search OR employee.email LIKE :search)',
         { search: `%${search}%` },
       );
     }
 
-    const [employees, total] = await qb.getManyAndCount();
+    const total = await baseQb
+      .clone()
+      .select('COUNT(employee.id)', 'count')
+      .getRawOne()
+      .then((res) => Number(res.count));
+
+    const employeeIds = await baseQb
+      .clone()
+      .select('employee.id')
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getMany()
+      .then((rows) => rows.map((r) => r.id));
+
+    if (employeeIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      };
+    }
+
+    const employees = await this.employeeRepo
+      .createQueryBuilder('employee')
+      .leftJoinAndSelect('employee.attendances', 'attendance')
+      .where('employee.id IN (:...ids)', { ids: employeeIds })
+      .orderBy('attendance.createdAt', 'DESC')
+      .getMany();
 
     const data = employees.map((emp) => ({
       id: emp.id,

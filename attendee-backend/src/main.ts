@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { seedAdmin } from './database/seeds/admin.seed';
 import { ValidationPipe } from '@nestjs/common';
 import { seedEmployees } from './database/seeds/employee.seed';
+import { seedAttendance } from './database/seeds/attendance.seed';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -34,6 +35,7 @@ async function bootstrap() {
 
   await seedAdmin(dataSource, configService);
   await seedEmployees(dataSource);
+  // await seedAttendance(dataSource);
 
   const port = configService.get<number>('PORT') || 3000;
 
